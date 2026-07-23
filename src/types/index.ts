@@ -29,6 +29,8 @@ export interface MedicineDispensing {
   reason: string;
 }
 
+export type ForwardStatus = 'active' | 'forwarded' | 'transferred';
+
 export interface HealthRecord {
   id: string;
   userId: string;
@@ -58,6 +60,11 @@ export interface HealthRecord {
   createdAt: string;
   updatedAt: string;
   archived?: boolean;
+  forwardStatus?: ForwardStatus;
+  forwardedTo?: string;
+  forwardReason?: string;
+  forwardedBy?: string;
+  forwardedAt?: string;
 }
 
 export type PatientServiceClassification =

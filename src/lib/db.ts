@@ -61,6 +61,7 @@ type HealthRecordRow = {
   height: string | null; weight: string | null; bmi: string | null; vision: string | null; dental_status: string | null;
   last_checkup: string | null; next_checkup: string | null; emergency_contact: string | null; emergency_phone: string | null;
   notes: string | null; created_at: string; updated_at: string; archived: boolean;
+  forward_status: string; forwarded_to: string | null; forward_reason: string | null; forwarded_by: string | null; forwarded_at: string | null;
 };
 
 const hrToRow = (r: HealthRecord): HealthRecordRow => ({
@@ -72,6 +73,8 @@ const hrToRow = (r: HealthRecord): HealthRecordRow => ({
   last_checkup: r.lastCheckup ?? null, next_checkup: r.nextCheckup ?? null,
   emergency_contact: r.emergencyContact ?? null, emergency_phone: r.emergencyPhone ?? null, notes: r.notes ?? null,
   created_at: r.createdAt, updated_at: r.updatedAt, archived: r.archived ?? false,
+  forward_status: r.forwardStatus ?? 'active', forwarded_to: r.forwardedTo ?? null,
+  forward_reason: r.forwardReason ?? null, forwarded_by: r.forwardedBy ?? null, forwarded_at: r.forwardedAt ?? null,
 });
 const rowToHr = (r: HealthRecordRow): HealthRecord => ({
   id: r.id, userId: r.user_id, userName: r.user_name, userRole: (r.user_role ?? undefined) as HealthRecord['userRole'], department: r.department ?? undefined,
@@ -82,6 +85,9 @@ const rowToHr = (r: HealthRecordRow): HealthRecord => ({
   lastCheckup: r.last_checkup ?? '', nextCheckup: r.next_checkup ?? undefined,
   emergencyContact: r.emergency_contact ?? undefined, emergencyPhone: r.emergency_phone ?? undefined, notes: r.notes ?? '',
   createdAt: r.created_at, updatedAt: r.updated_at, archived: r.archived,
+  forwardStatus: (r.forward_status ?? 'active') as HealthRecord['forwardStatus'],
+  forwardedTo: r.forwarded_to ?? undefined, forwardReason: r.forward_reason ?? undefined,
+  forwardedBy: r.forwarded_by ?? undefined, forwardedAt: r.forwarded_at ?? undefined,
 });
 
 export async function fetchHealthRecords(): Promise<HealthRecord[]> {
