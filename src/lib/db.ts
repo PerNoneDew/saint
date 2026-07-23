@@ -61,7 +61,6 @@ type HealthRecordRow = {
   height: string | null; weight: string | null; bmi: string | null; vision: string | null; dental_status: string | null;
   last_checkup: string | null; next_checkup: string | null; emergency_contact: string | null; emergency_phone: string | null;
   notes: string | null; created_at: string; updated_at: string; archived: boolean;
-  forward_status: string; forwarded_to: string | null; forward_reason: string | null; forwarded_by: string | null; forwarded_at: string | null;
 };
 
 const hrToRow = (r: HealthRecord): HealthRecordRow => ({
@@ -73,8 +72,6 @@ const hrToRow = (r: HealthRecord): HealthRecordRow => ({
   last_checkup: r.lastCheckup ?? null, next_checkup: r.nextCheckup ?? null,
   emergency_contact: r.emergencyContact ?? null, emergency_phone: r.emergencyPhone ?? null, notes: r.notes ?? null,
   created_at: r.createdAt, updated_at: r.updatedAt, archived: r.archived ?? false,
-  forward_status: r.forwardStatus ?? 'active', forwarded_to: r.forwardedTo ?? null,
-  forward_reason: r.forwardReason ?? null, forwarded_by: r.forwardedBy ?? null, forwarded_at: r.forwardedAt ?? null,
 });
 const rowToHr = (r: HealthRecordRow): HealthRecord => ({
   id: r.id, userId: r.user_id, userName: r.user_name, userRole: (r.user_role ?? undefined) as HealthRecord['userRole'], department: r.department ?? undefined,
@@ -85,9 +82,6 @@ const rowToHr = (r: HealthRecordRow): HealthRecord => ({
   lastCheckup: r.last_checkup ?? '', nextCheckup: r.next_checkup ?? undefined,
   emergencyContact: r.emergency_contact ?? undefined, emergencyPhone: r.emergency_phone ?? undefined, notes: r.notes ?? '',
   createdAt: r.created_at, updatedAt: r.updated_at, archived: r.archived,
-  forwardStatus: (r.forward_status ?? 'active') as HealthRecord['forwardStatus'],
-  forwardedTo: r.forwarded_to ?? undefined, forwardReason: r.forward_reason ?? undefined,
-  forwardedBy: r.forwarded_by ?? undefined, forwardedAt: r.forwarded_at ?? undefined,
 });
 
 export async function fetchHealthRecords(): Promise<HealthRecord[]> {
@@ -137,20 +131,19 @@ export async function upsertDispensingAll(items: MedicineDispensing[]): Promise<
 type RequestRow = {
   id: string; user_id: string; user_name: string; user_role: string | null; type: string; description: string; status: string;
   attachments: string[]; submitted_at: string; updated_at: string; reviewed_by: string | null; review_notes: string | null;
-  remarks: string | null; forwarded_by: string | null; forwarded_to: string | null; forward_reason: string | null; forwarded_at: string | null; referral_personnel: string | null; referral_facility: string | null; referral_reason: string | null;
+  remarks: string | null; forwarded_by: string | null; referral_personnel: string | null; referral_facility: string | null; referral_reason: string | null;
 };
 const reqToRow = (r: Request): RequestRow => ({
   id: r.id, user_id: r.userId, user_name: r.userName, user_role: r.userRole ?? null, type: r.type, description: r.description, status: r.status,
   attachments: r.attachments, submitted_at: r.submittedAt, updated_at: r.updatedAt, reviewed_by: r.reviewedBy ?? null,
   review_notes: r.reviewNotes ?? null, remarks: r.remarks ?? null, forwarded_by: r.forwardedBy ?? null,
-  forwarded_to: r.forwardedTo ?? null, forward_reason: r.forwardReason ?? null, forwarded_at: r.forwardedAt ?? null,
   referral_personnel: r.referralPersonnel ?? null, referral_facility: r.referralFacility ?? null, referral_reason: r.referralReason ?? null,
 });
 const rowToReq = (r: RequestRow): Request => ({
   id: r.id, userId: r.user_id, userName: r.user_name, userRole: r.user_role as Request['userRole'] ?? undefined, type: r.type as Request['type'],
   description: r.description, status: r.status as Request['status'], attachments: r.attachments ?? [],
   submittedAt: r.submitted_at, updatedAt: r.updated_at, reviewedBy: r.reviewed_by ?? undefined, reviewNotes: r.review_notes ?? undefined,
-  remarks: r.remarks ?? undefined, forwardedBy: r.forwarded_by ?? undefined, forwardedTo: r.forwarded_to ?? undefined, forwardReason: r.forward_reason ?? undefined, forwardedAt: r.forwarded_at ?? undefined, referralPersonnel: r.referral_personnel ?? undefined,
+  remarks: r.remarks ?? undefined, forwardedBy: r.forwarded_by ?? undefined, referralPersonnel: r.referral_personnel ?? undefined,
   referralFacility: r.referral_facility ?? undefined, referralReason: r.referral_reason ?? undefined,
 });
 

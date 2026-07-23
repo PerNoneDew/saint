@@ -57,8 +57,6 @@ export default function RequestManagement() {
   const [referralPersonnel, setReferralPersonnel] = useState('');
   const [referralFacility, setReferralFacility] = useState('');
   const [referralReason, setReferralReason] = useState('');
-  const [forwardTo, setForwardTo] = useState('');
-  const [forwardReason, setForwardReason] = useState('');
   const [showSubmit, setShowSubmit] = useState(false);
   const [submitForm, setSubmitForm] = useState({ type: 'consultation' as RequestType, description: '', attachments: '' });
   const [showForwardModal, setShowForwardModal] = useState(false);
@@ -97,10 +95,9 @@ export default function RequestManagement() {
     processing: displayRequests.filter((r) => r.status === 'processing').length,
     approved: displayRequests.filter((r) => r.status === 'approved').length,
     rejected: displayRequests.filter((r) => r.status === 'rejected').length,
-    forwarded: displayRequests.filter((r) => r.status === 'forwarded').length,
   };
 
-  const updateStatus = (id: string, status: RequestStatus, notes?: string, rmks?: string, rp?: string, rf?: string, rr?: string, ft?: string, fr?: string) => {
+  const updateStatus = (id: string, status: RequestStatus, notes?: string, rmks?: string, rp?: string, rf?: string, rr?: string) => {
     setRequests((prev) => prev.map((r) => r.id === id ? {
       ...r, status,
       reviewedBy: currentUser.name,
@@ -109,10 +106,6 @@ export default function RequestManagement() {
       referralPersonnel: rp !== undefined ? rp : r.referralPersonnel,
       referralFacility: rf !== undefined ? rf : r.referralFacility,
       referralReason: rr !== undefined ? rr : r.referralReason,
-      forwardedTo: ft !== undefined ? ft : r.forwardedTo,
-      forwardReason: fr !== undefined ? fr : r.forwardReason,
-      forwardedBy: status === 'forwarded' ? currentUser.name : r.forwardedBy,
-      forwardedAt: status === 'forwarded' ? new Date().toISOString().split('T')[0] : r.forwardedAt,
       updatedAt: new Date().toISOString().split('T')[0],
     } : r));
   };
@@ -150,17 +143,9 @@ export default function RequestManagement() {
 
   const handleReview = () => {
     if (!reviewReq) return;
+    // If rejecting, show confirmation
     if (reviewAction === 'rejected') {
       setShowRejectConfirm(true);
-    } else if (reviewAction === 'forwarded') {
-      if (!forwardTo.trim() || !forwardReason.trim()) return;
-      updateStatus(reviewReq.id, 'forwarded', reviewNotes, remarks,
-        isReferral(reviewReq.type) ? referralPersonnel : undefined,
-        isReferral(reviewReq.type) ? referralFacility : undefined,
-        isReferral(reviewReq.type) ? referralReason : undefined,
-        forwardTo.trim(), forwardReason.trim(),
-      );
-      setReviewReq(null);
     } else {
       updateStatus(reviewReq.id, reviewAction, reviewNotes, remarks,
         isReferral(reviewReq.type) ? referralPersonnel : undefined,
@@ -190,8 +175,6 @@ export default function RequestManagement() {
     setReferralPersonnel(r.referralPersonnel ?? '');
     setReferralFacility(r.referralFacility ?? '');
     setReferralReason(r.referralReason ?? '');
-    setForwardTo(r.forwardedTo ?? '');
-    setForwardReason(r.forwardReason ?? '');
   };
 
   const statusConfig = [
@@ -199,7 +182,6 @@ export default function RequestManagement() {
     { key: 'processing', label: 'Processing', color: 'text-sky-600', bg: 'bg-sky-50', icon: RefreshCw },
     { key: 'approved', label: 'Approved', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
     { key: 'rejected', label: 'Rejected', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
-    { key: 'forwarded', label: 'Forwarded', color: 'text-sky-600', bg: 'bg-sky-50', icon: Share2 },
   ];
 
   const groups = ['Certifications', 'Clinical Services', 'Referrals', 'Diagnostic', 'Other'];
@@ -389,16 +371,6 @@ export default function RequestManagement() {
               </div>
             )}
 
-            {viewReq.status === 'forwarded' && (viewReq.forwardedTo || viewReq.forwardReason) && (
-              <div className="bg-sky-50 border border-sky-100 rounded-xl p-3 space-y-1.5">
-                <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider">Forwarding Details</p>
-                {viewReq.forwardedTo && <div><p className="text-xs text-sky-400">Forwarded To</p><p className="text-sm font-semibold text-sky-700">{viewReq.forwardedTo}</p></div>}
-                {viewReq.forwardReason && <div><p className="text-xs text-sky-400">Reason</p><p className="text-sm text-sky-700 text-justify">{viewReq.forwardReason}</p></div>}
-                {viewReq.forwardedBy && <div><p className="text-xs text-sky-400">Forwarded By</p><p className="text-sm font-medium text-sky-700">{viewReq.forwardedBy}</p></div>}
-                {viewReq.forwardedAt && <div><p className="text-xs text-sky-400">Date</p><p className="text-sm text-sky-700">{viewReq.forwardedAt}</p></div>}
-              </div>
-            )}
-
             {viewReq.reviewedBy && (
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
                 <p className="text-xs text-slate-400 mb-1">Reviewed by <span className="font-medium text-slate-600">{viewReq.reviewedBy}</span></p>
@@ -433,33 +405,15 @@ export default function RequestManagement() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Decision</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(['processing', 'approved', 'rejected', 'forwarded'] as RequestStatus[]).map((s) => (
+              <div className="grid grid-cols-3 gap-2">
+                {(['processing', 'approved', 'rejected'] as RequestStatus[]).map((s) => (
                   <button key={s} onClick={() => setReviewAction(s)}
                     className={`py-2 text-sm font-medium rounded-xl border transition-all capitalize ${reviewAction === s ? 'border-teal-400 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-600 hover:border-teal-200'}`}>
-                    {s === 'forwarded' ? 'Forward Patient' : s}
+                    {s}
                   </button>
                 ))}
               </div>
             </div>
-
-            {reviewAction === 'forwarded' && (
-              <div className="border border-sky-200 rounded-xl p-4 bg-sky-50/50 space-y-3">
-                <p className="text-xs font-bold text-sky-700 uppercase tracking-wider">Forward Patient — Transfer to Another Facility / Personnel</p>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Forward To <span className="text-rose-500">*</span></label>
-                  <input value={forwardTo} onChange={(e) => setForwardTo(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-                    placeholder="e.g. City General Hospital, Dr. Smith (Cardiology)" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Reason for Forwarding <span className="text-rose-500">*</span></label>
-                  <textarea value={forwardReason} onChange={(e) => setForwardReason(e.target.value)} rows={2}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
-                    placeholder="Reason for forwarding the patient..." />
-                </div>
-              </div>
-            )}
 
             {isReferral(reviewReq.type) && (
               <div className="border border-violet-200 rounded-xl p-4 bg-violet-50/50 space-y-3">

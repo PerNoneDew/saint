@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Eye, CreditCard as Edit2, Archive, Pill, Activity, AlertCircle, Phone, ChevronRight, Share2 } from 'lucide-react';
+import { Plus, Search, Eye, CreditCard as Edit2, Archive, Pill, Activity, AlertCircle, Phone, ChevronRight } from 'lucide-react';
 import PatientSearch from '../../components/ui/PatientSearch';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -48,10 +48,6 @@ export default function HealthRecords() {
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showUnarchiveConfirm, setShowUnarchiveConfirm] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<HealthRecord | null>(null);
-  const [showForwardModal, setShowForwardModal] = useState(false);
-  const [forwardTarget, setForwardTarget] = useState<HealthRecord | null>(null);
-  const [forwardForm, setForwardForm] = useState({ forwardedTo: '', reason: '' });
-  const [forwardError, setForwardError] = useState('');
 
   const archivedRecords = healthRecords.filter((r) => r.archived);
   const activeRecords = showArchived ? archivedRecords : displayRecords;
@@ -106,35 +102,6 @@ export default function HealthRecords() {
       { loadingTitle: 'Restoring record…', successTitle: 'Record restored', successMessage: `${target.userName}'s record is active again.`, autoCloseMs: 1800 },
     );
     if (ok) { setShowUnarchiveConfirm(false); setArchiveTarget(null); }
-  };
-
-  const openForward = (r: HealthRecord) => {
-    setForwardTarget(r);
-    setForwardForm({ forwardedTo: '', reason: '' });
-    setForwardError('');
-    setShowForwardModal(true);
-  };
-
-  const handleForward = async () => {
-    setForwardError('');
-    if (!forwardTarget) { setForwardError('No patient selected.'); return; }
-    if (!forwardForm.forwardedTo.trim()) { setForwardError('Please enter where the patient is being forwarded to.'); return; }
-    if (!forwardForm.reason.trim()) { setForwardError('Please enter a reason for forwarding.'); return; }
-    const now = new Date().toISOString().split('T')[0];
-    const updated: HealthRecord = {
-      ...forwardTarget,
-      forwardStatus: 'forwarded',
-      forwardedTo: forwardForm.forwardedTo.trim(),
-      forwardReason: forwardForm.reason.trim(),
-      forwardedBy: currentUser.name,
-      forwardedAt: now,
-      updatedAt: now,
-    };
-    const ok = await runWithFeedback(
-      () => persistHealthRecord(updated),
-      { loadingTitle: 'Forwarding patient…', successTitle: 'Patient forwarded', successMessage: `${forwardTarget.userName} has been forwarded to ${forwardForm.forwardedTo.trim()}.`, autoCloseMs: 1800 },
-    );
-    if (ok) setShowForwardModal(false);
   };
 
   const openArchiveConfirm = (r: HealthRecord) => {
@@ -255,11 +222,6 @@ export default function HealthRecords() {
                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                 {r.userRole && <Badge label={roleLabel(r.userRole)} variant={statusVariant(r.userRole)} />}
                                 {r.department && <span className="text-xs text-slate-400 truncate">{r.department}</span>}
-                                {r.forwardStatus === 'forwarded' && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-sky-50 text-sky-700 text-xs rounded-full border border-sky-200 font-medium">
-                                    <Share2 size={9} /> Forwarded
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -304,7 +266,6 @@ export default function HealthRecords() {
                             <>
                               <button onClick={() => openEdit(r)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors" title="Edit"><Edit2 size={14} /></button>
                               <button onClick={() => openDispense(r)} className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors" title="Dispense Medicine"><Pill size={14} /></button>
-                              <button onClick={() => openForward(r)} className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors" title="Forward Patient"><Share2 size={14} /></button>
                               <button onClick={() => openArchiveConfirm(r)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Archive"><Archive size={14} /></button>
                             </>
                           )}
@@ -416,21 +377,6 @@ export default function HealthRecords() {
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Clinical Notes</p>
                       <p className="text-sm text-slate-600 bg-slate-50 rounded-xl p-4 leading-relaxed text-justify border border-slate-100">{viewRecord.notes}</p>
-                    </div>
-                  )}
-
-                  {viewRecord.forwardStatus === 'forwarded' && (
-                    <div className="p-4 bg-sky-50 rounded-xl border border-sky-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Share2 size={15} className="text-sky-600" />
-                        <p className="text-xs font-bold text-sky-700 uppercase tracking-wider">Forwarding Details</p>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div><span className="font-medium text-slate-500">Forwarded to:</span> <span className="font-semibold text-slate-700">{viewRecord.forwardedTo}</span></div>
-                        <div><span className="font-medium text-slate-500">Reason:</span> <span className="text-slate-700">{viewRecord.forwardReason}</span></div>
-                        <div><span className="font-medium text-slate-500">Forwarded by:</span> <span className="text-slate-700">{viewRecord.forwardedBy}</span></div>
-                        <div><span className="font-medium text-slate-500">Date:</span> <span className="text-slate-700">{viewRecord.forwardedAt}</span></div>
-                      </div>
                     </div>
                   )}
 
@@ -643,47 +589,6 @@ export default function HealthRecords() {
         confirmLabel="Restore Record"
         type="success"
       />
-
-      {/* Forward Patient Modal */}
-      {showForwardModal && forwardTarget && (
-        <Modal isOpen={showForwardModal} onClose={() => setShowForwardModal(false)} title={`Forward Patient — ${forwardTarget.userName}`}>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 bg-sky-50 border border-sky-200 rounded-xl">
-              <Share2 size={18} className="text-sky-600 mt-0.5 shrink-0" />
-              <p className="text-sm text-sky-800">
-                Forwarding transfers this patient to another facility or personnel. The patient's status will be marked as <span className="font-semibold">Forwarded</span>.
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Forward To <span className="text-rose-500">*</span></label>
-              <input
-                type="text"
-                value={forwardForm.forwardedTo}
-                onChange={(e) => setForwardForm((f) => ({ ...f, forwardedTo: e.target.value }))}
-                placeholder="e.g. City General Hospital, Dr. Smith (Cardiology)"
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Reason <span className="text-rose-500">*</span></label>
-              <textarea
-                value={forwardForm.reason}
-                onChange={(e) => setForwardForm((f) => ({ ...f, reason: e.target.value }))}
-                placeholder="Reason for forwarding (e.g. needs specialist care, referred for X-ray)"
-                rows={3}
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition resize-none"
-              />
-            </div>
-            {forwardError && (
-              <p className="text-xs text-rose-600 flex items-center gap-1.5"><AlertCircle size={14} /> {forwardError}</p>
-            )}
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => setShowForwardModal(false)} className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">Cancel</button>
-              <button onClick={handleForward} className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition flex items-center justify-center gap-2"><Share2 size={15} /> Forward Patient</button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
