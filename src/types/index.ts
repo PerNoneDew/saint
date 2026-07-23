@@ -98,6 +98,9 @@ export interface Request {
   reviewNotes?: string;
   remarks?: string;
   forwardedBy?: string;
+  forwardedTo?: string;
+  forwardReason?: string;
+  forwardedAt?: string;
   referralPersonnel?: string;
   referralFacility?: string;
   referralReason?: string;
